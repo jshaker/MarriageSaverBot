@@ -38,7 +38,7 @@ class ProductPageScraper():
     def get_price(self, url):
         # validate that URL is a valid Westelm product page
         if not url.startswith('https://www.westelm.com/products/'):
-            return -1
+            return {"error": "invalid url", price: 0}
          
         # navigate to the URL
         self.driver.get(url)
@@ -55,10 +55,10 @@ class ProductPageScraper():
         prices = self.driver.find_elements(By.CSS_SELECTOR, '#pip-river-container-WE > div.product-info-rvi > div.product-info > div.product-details > div > div.discount-percentage-enabled.discount-percentage-product-details.line-through.price-under-title > ul span.amount')
         # prices = price_container.find_elements(By.CSS_SELECTOR, 'span.amount')
         if (len(prices) == 0):
-            return -1
+            return {"error": "couldn't parse price", price: 0}
         
         price = prices[len(prices) - 1].text
-        return price
+        return {"price": price}
 
 class MyServer(BaseHTTPRequestHandler):
     def __init__(self, product_page_scraper, *args, **kwargs):
@@ -70,13 +70,17 @@ class MyServer(BaseHTTPRequestHandler):
     def do_GET(self):
         params = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
         url = params["url"][0]
-        price = self.product_page_scraper.get_price(url)
-        self.send_response(200)
+        result = self.product_page_scraper.get_price(url)
+
+        if result.error != None:
+            self.send_error(500)
+            return
+        else:
+            self.send_response(200)
+
         self.send_header("Content-type", "application/json")
         self.end_headers()
-
-        data = {'price': price}
-        self.wfile.write(json.dumps(data).encode('utf-8'))
+        self.wfile.write(json.dumps(result).encode('utf-8'))
 
 
 if __name__ == "__main__":
