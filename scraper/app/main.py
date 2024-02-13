@@ -9,7 +9,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options  
 import undetected_chromedriver as uc
 
-hostName = "localhost"
+hostName = "0.0.0.0"
 serverPort = 8080
 
 def new_driver():
@@ -45,7 +45,7 @@ class ProductPageScraper():
 
         # Check if request was blocked
         if '403' in self.driver.title:
-            return -1
+            return {"error": "request blocked", price: 0}
         
         # wait for the page to load
         WebDriverWait(self.driver, 10).until(
@@ -58,7 +58,7 @@ class ProductPageScraper():
             return {"error": "couldn't parse price", price: 0}
         
         price = prices[len(prices) - 1].text
-        return {"price": price}
+        return {"price": int(price.replace(",", "")), "error": None}
 
 class MyServer(BaseHTTPRequestHandler):
     def __init__(self, product_page_scraper, *args, **kwargs):
@@ -69,10 +69,14 @@ class MyServer(BaseHTTPRequestHandler):
 
     def do_GET(self):
         params = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        if "url" not in params or len(params["url"]) != 1:
+            self.send_error(400)
+            return
+        
         url = params["url"][0]
         result = self.product_page_scraper.get_price(url)
 
-        if result.error != None:
+        if result['error'] != None:
             self.send_error(500)
             return
         else:
@@ -84,11 +88,12 @@ class MyServer(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
     driver = new_driver()
     product_page_scraper = ProductPageScraper(driver)
     handler = partial(MyServer, product_page_scraper)
     web_server = HTTPServer((hostName, serverPort), handler)
-    print("Server started http://%s:%s" % (hostName, serverPort))
+    logging.debug("Server started http://%s:%s" % (hostName, serverPort))
 
     try:
         web_server.serve_forever()
@@ -96,4 +101,4 @@ if __name__ == "__main__":
         pass
 
     web_server.server_close()
-    print("Server stopped.")
+    logging.debug("Server stopped.")

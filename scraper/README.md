@@ -8,5 +8,17 @@ Image size about 1.7Gb
 2. build the image: docker compose build
 3. run: docker compose up
 
+## Example query:
+
+```bash
+curl localhost:8080/?url=https://www.westelm.com/products/ojai-rug-t7072/
+```
+
+Response:
+
+```json
+{"price": 1399}
+```
+
 ### Links:
 1. Alpine Linux based image: https://github.com/Hudrolax/uc-docker-alpine
