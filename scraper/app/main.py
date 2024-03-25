@@ -1,5 +1,8 @@
+import argparse
 import logging
 import json
+import requests
+from decimal import *
 from functools import partial
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -10,7 +13,7 @@ from selenium.webdriver.chrome.options import Options
 import undetected_chromedriver as uc
 
 hostName = "0.0.0.0"
-serverPort = 8080
+serverPort = 8081
 
 def new_driver():
     _chrome_options = Options()  
@@ -58,47 +61,44 @@ class ProductPageScraper():
             return {"error": "couldn't parse price", price: 0}
         
         price = prices[len(prices) - 1].text
-        return {"price": int(price.replace(",", "")), "error": None}
-
-class MyServer(BaseHTTPRequestHandler):
-    def __init__(self, product_page_scraper, *args, **kwargs):
-        self.product_page_scraper = product_page_scraper
-        # BaseHTTPRequestHandler calls do_GET **inside** __init__ !!!
-        # So we have to call super().__init__ after setting attributes.
-        super().__init__(*args, **kwargs)
-
-    def do_GET(self):
-        params = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
-        if "url" not in params or len(params["url"]) != 1:
-            self.send_error(400)
-            return
-        
-        url = params["url"][0]
-        result = self.product_page_scraper.get_price(url)
-
-        if result['error'] != None:
-            self.send_error(500)
-            return
-        else:
-            self.send_response(200)
-
-        self.send_header("Content-type", "application/json")
-        self.end_headers()
-        self.wfile.write(json.dumps(result).encode('utf-8'))
+        return {"price": Decimal(price.replace(",", "")), "error": None}
 
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
+def main():
+    logging.basicConfig(level=logging.INFO)
     driver = new_driver()
     product_page_scraper = ProductPageScraper(driver)
-    handler = partial(MyServer, product_page_scraper)
-    web_server = HTTPServer((hostName, serverPort), handler)
-    logging.debug("Server started http://%s:%s" % (hostName, serverPort))
+    # read flags to get the url of the server
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--web_url", type=str, required=False, default="http://price-tracker-nlb-69684cb79f3a9e04.elb.us-east-2.amazonaws.com")
+    args = parser.parse_args()
+    web_url = args.web_url
 
-    try:
-        web_server.serve_forever()
-    except KeyboardInterrupt:
-        pass
+    # make a request to web server to retrieve a list of price watchers
+    response = requests.get(web_url + "/api/watchers/")
+    watchers = response.json()
 
-    web_server.server_close()
-    logging.debug("Server stopped.")
+    # for each watcher, make a request to the scraper server to get the price
+    for watcher in watchers:
+        price = product_page_scraper.get_price(watcher['url'])
+        if price["error"] is not None:
+            logging.error(f"Error getting price for {watcher['url']}: {price['error']}")
+            continue
+        
+        logging.info(f"Price for {watcher['url']} is {price}")
+        # make a request to the web server to update the price
+        r = requests.post(web_url + "/api/prices/", json={"watcher_id": watcher['id'], "price": price})
+        if r.status_code != 200:
+            logging.error(f"Error updating price for {watcher['url']}: status: {r.status_code}, message: {r.text}")
+            continue
+
+        logging.info(f"Successfully updated price for {watcher['url']}")    
+
+
+    # close the driver
+    driver.close()
+
+if __name__ == "__main__":
+    main()
+
+

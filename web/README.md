@@ -1,37 +1,7 @@
-## Compose sample application
-
-### Use with Docker Development Environments
-
-You can open this sample in the Dev Environments feature of Docker Desktop version 4.12 or later.
-
-[Open in Docker Dev Environments <img src="../open_in_new.svg" alt="Open in Docker Dev Environments" align="top"/>](https://open.docker.com/dashboard/dev-envs?url=https://github.com/docker/awesome-compose/tree/master/django)
-
-### Django application in dev mode
-
-Project structure:
-```
-.
-├── compose.yaml
-├── app
-    ├── Dockerfile
-    ├── requirements.txt
-    └── manage.py
+## Run with docker compose
 
 ```
-
-[_compose.yaml_](compose.yaml)
-```
-services: 
-  web: 
-    build: app 
-    ports: 
-      - '8000:8000'
-```
-
-## Deploy with docker compose
-
-```
-$ docker compose up -d
+$ docker compose up
 Creating network "django_default" with the default driver
 Building web
 Step 1/6 : FROM python:3.7-alpine
@@ -42,18 +12,30 @@ Creating django_web_1 ... done
 
 ```
 
-## Expected result
+# Build and deploy
 
-Listing containers must show one container running and the port mapping as below:
-```
-$ docker ps
-CONTAINER ID        IMAGE               COMMAND                  CREATED              STATUS              PORTS                    NAMES
-3adaea94142d        django_web          "python3 manage.py r…"   About a minute ago   Up About a minute   0.0.0.0:8000->8000/tcp   django_web_1
-```
+1. Authenticate with AWS: 
+  
+  ```bash
+  $ aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/r1s3i7n4
+  ```
 
-After the application starts, navigate to `http://localhost:8000` in your web browser:
+2. Docker build with tag
 
-Stop and remove the containers
-```
-$ docker compose down
-```
+  ```bash
+  $ docker build -t price-tracker-web .  
+  ```
+
+3. Docker tag
+
+  ```bash
+   $ docker tag price-tracker-web:latest public.ecr.aws/r1s3i7n4/price-tracker-web:latest
+   ```
+
+4. Push to ECR 
+
+  ```bash
+  $ docker push public.ecr.aws/r1s3i7n4/price-tracker-web:latest 
+  ```
+
+5. Force deploy in ECS

@@ -25,6 +25,8 @@ SECRET_KEY = 'django-insecure-c@3$#6kg%h8eiv8nn0gallsju8m(sma-u^)v88+29a%i@*^h-4
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+APPEND_SLASH = False
+
 ALLOWED_HOSTS = ['*']
 
 
@@ -37,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'marriagesaver',
 ]
 
 MIDDLEWARE = [
@@ -74,9 +78,17 @@ WSGI_APPLICATION = 'marriagesaver.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.sqlite3',
+    #     'NAME': BASE_DIR / 'db.sqlite3',
+    # },
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'price_tracker',
+        'USER': 'postgres',
+        'PASSWORD': 'c^#u6e4LAunJ5D1fYsh6',
+        'HOST': 'price-tracker-db.c1uo4iwycbf6.us-east-2.rds.amazonaws.com',
+        'PORT': '5432',
     }
 }
 

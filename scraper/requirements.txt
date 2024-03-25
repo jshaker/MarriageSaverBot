@@ -1,2 +1,4 @@
+argparse
+requests
 selenium==4.10.0
 undetected-chromedriver

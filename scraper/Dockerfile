@@ -1,6 +1,6 @@
 FROM ubuntu:latest
 
-EXPOSE 8080
+EXPOSE 8081
 
 COPY ./requirements.txt /tmp/requirements.txt
 COPY ./app /app

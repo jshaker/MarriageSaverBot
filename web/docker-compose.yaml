@@ -1,7 +1,8 @@
 services:
   web:
-    build:
-      context: marriagesaver
-      target: builder
+    build: .
     ports:
       - '8000:8000'
+    volumes:
+      - .:/app
+    tty: true

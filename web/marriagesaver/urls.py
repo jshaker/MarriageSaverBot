@@ -16,7 +16,19 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.urls import include, re_path
+from rest_framework import routers
+from .views import PricesViewSet, WatchersViewSet
+
+router = routers.DefaultRouter()
+router.register(r'prices', PricesViewSet)
+router.register(r'watchers', WatchersViewSet)
+
+# urlpatterns += router.urls
+# Wire up our API using automatic URL routing.
+# Additionally, we include login URLs for the browsable API.
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/', include(router.urls)),
 ]

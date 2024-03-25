@@ -5,7 +5,7 @@ import smtplib
 def main():
     # read flags to get the url of the server
     parser = argparse.ArgumentParser()
-    parser.add_argument("--web_url", type=str, required=True)
+    parser.add_argument("--web_url", type=str, required=True, default="http://localhost/app")
     parser.add_argument("--smtp_server_address", type=str, required=True)
     parser.add_argument("--smtp_server_port", type=int, required=True)
     parser.add_argument("--smtp_username", type=str, required=True)
