@@ -1,8 +1,8 @@
 import argparse
+from datetime import date
 import logging
 import json
 import requests
-from decimal import *
 from functools import partial
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -61,7 +61,7 @@ class ProductPageScraper():
             return {"error": "couldn't parse price", price: 0}
         
         price = prices[len(prices) - 1].text
-        return {"price": Decimal(price.replace(",", "")), "error": None}
+        return {"price": float(price.replace(",", "")), "error": None}
 
 
 def main():
@@ -87,7 +87,7 @@ def main():
         
         logging.info(f"Price for {watcher['url']} is {price}")
         # make a request to the web server to update the price
-        r = requests.post(web_url + "/api/prices/", json={"watcher_id": watcher['id'], "price": price})
+        r = requests.post(web_url + "/api/prices/", json={"watcher_id": watcher['id'], "price": str(price), "date": str(date.today())})
         if r.status_code != 200:
             logging.error(f"Error updating price for {watcher['url']}: status: {r.status_code}, message: {r.text}")
             continue
